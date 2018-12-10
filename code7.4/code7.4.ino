@@ -1,26 +1,46 @@
-#include <Wire.h>
+#include <SPI.h>
 
-void setup() 
+byte dataOut;
+byte dataIn;
+
+//Slave Select, active LOW
+int pinSS = 10;  
+
+void setup()
 {
-  // join i2c bus with address #8
-  Wire.begin(8);   
-               
-  // register event
-  Wire.onRequest(requestEvent); 
-}
-
-void loop() 
-{
-  delay(100);
-}
-
-// function that executes whenever data is requested by master
-// this function is registered as an event, see setup()
-
-void requestEvent()
-{  
-  // respond with message of 6 bytes
-  // as expected by master
+  //link to PC
+  Serial.begin(115200);  
   
-  Wire.write("hello "); 
+  pinMode(pinSS, OUTPUT);
+  digitalWrite(pinSS, HIGH);
+  SPI.begin();
 }
+
+void loop()
+{
+  while(Serial.available() > 0)
+  {
+    dataOut = Serial.read();
+    dataIn = spiWriteAndRead(dataOut);
+    
+    Serial.write(dataIn);
+  }
+}
+
+byte spiWriteAndRead(byte dout)
+{
+  byte din;
+  
+  digitalWrite(pinSS, LOW);
+  delay(1);
+  
+  din = SPI.transfer(dout);
+  
+  digitalWrite(pinSS, HIGH);
+  
+  return din;
+}
+
+
+
+

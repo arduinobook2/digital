@@ -1,43 +1,66 @@
-#include <SPI.h>
+//Header file
 
-//variables of byte type Data-type.
-byte dataOut;
-byte dataIn;
-
-//Slave Select, active LOW
-int pinSS = 10;  
+#include <Wire.h>
 
 void setup()
 {
-  //link to PC
-  Serial.begin(115200);  
-  
-  pinMode(pinSS, OUTPUT);
-  digitalWrite(pinSS, HIGH);
+  Wire.begin();
  
-  SPI.begin();
-}
+  Serial.begin(9600);
 
+  //wait for serial monitor
+  while (!Serial);             
+  Serial.println("\nI2C Scanner");
+}
+ 
+ 
 void loop()
 {
-  while(Serial.available() > 0)
+  // data type of byte type
+  byte error, address;
+  
+  int nDevices;
+ 
+  Serial.println("Scanning...");
+ 
+  nDevices = 0;
+  
+  for(address = 1; address < 127; address++ )
   {
-    dataOut = Serial.read();
-    dataIn = spiWriteAndRead(dataOut);
+    // The i2c_scanner uses the return value of
+    // the Write.endTransmisstion to see if
+    // a device did acknowledge to the address.
     
-    Serial.write(dataIn);
+    Wire.beginTransmission(address);
+    error = Wire.endTransmission();
+ 
+    if (error == 0)
+    {
+      Serial.print("I2C device found at address 0x");
+      if (address<16)
+        Serial.print("0");
+      Serial.print(address,HEX);
+      Serial.println("  !");
+ 
+      nDevices++;
+    }
+    
+    else if (error==4)
+    {
+      Serial.print("Unknown error at address 0x");
+      if (address<16)
+        Serial.print("0");
+      Serial.println(address,HEX);
+    }    
   }
+  
+  if (nDevices == 0)
+    Serial.println("No I2C devices found\n");
+    
+  else
+    Serial.println("done\n");
+
+  // wait 5 seconds for next scan
+  delay(5000);          
 }
 
-byte spiWriteAndRead(byte dout)
-{
-  byte din;
-  
-  digitalWrite(pinSS, LOW);
-  delay(1);
-  din = SPI.transfer(dout);
-  
-  digitalWrite(pinSS, HIGH);
-  
-  return din;
-}

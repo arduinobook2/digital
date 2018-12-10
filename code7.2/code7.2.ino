@@ -1,54 +1,27 @@
-//echo back input data in next round
-byte dataEcho;
+#include <Wire.h>
 
-//send input data to PC
-byte dataToPC;  
-
-void setup()
+void setup() 
 {
-   //link to PC
-   Serial.begin(115200);  
-    
-   //The Port B Data Direction Register
-   DDRB  |= 0b00010000; 
-   //The Port B 
-   PORTB |= 0b00000100;
-   
-   //SPI Control Register
-   SPCR  |= 0b11000000;
-   //SPI status register
-   SPSR  |= 0b00000000;
-    
-    dataEcho = 0;
-    dataToPC = 0;
-    
-    sei();
+  // join i2c bus (address optional for master)
+  Wire.begin();        
+
+  // start serial for output
+  Serial.begin(9600);  
 }
 
-void loop()
-{  
-  if(dataToPC != 0)
-  {
-    Serial.write(dataToPC);
-    dataToPC = 0;
+void loop() 
+{
+  // request 6 bytes from slave device #8
+  Wire.requestFrom(8, 6);    
+
+  while (Wire.available()) // slave may send less than requested
+  { 
+    // receive a byte as character
+    char c = Wire.read(); 
+    
+    Serial.println(c);         
   }
 
+  delay(500);
 }
 
-ISR(SPI_STC_vect)
-{
-  cli();
-  
-  //while SS Low
-  while(!(PINB & 0b00000100))
-  {
-    SPDR = dataEcho;
-    
-    //wait SPI transfer complete
-    while(!(SPSR & (1 << SPIF)));
-
-    //send back in next round
-    dataEcho = SPDR;  
-  }
-  sei();
-}
